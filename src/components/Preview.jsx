@@ -1,0 +1,245 @@
+import { useState, useEffect } from 'react'
+import { extractYouTubeId } from '../lib/supabase'
+
+function calculateTimeTogether(dataInicio, horaInicio) {
+  if (!dataInicio) return null
+
+  const start = new Date(dataInicio)
+  if (horaInicio) {
+    const [hours, minutes] = horaInicio.split(':')
+    start.setHours(parseInt(hours), parseInt(minutes))
+  }
+
+  const now = new Date()
+  const diff = now - start
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const months = Math.floor(days / 30)
+  const years = Math.floor(months / 12)
+
+  if (years > 0) {
+    const remainingMonths = months % 12
+    return `${years} ano${years > 1 ? 's' : ''}${remainingMonths > 0 ? ` e ${remainingMonths} mes${remainingMonths > 1 ? 'es' : ''}` : ''}`
+  } else if (months > 0) {
+    return `${months} mes${months > 1 ? 'es' : ''}`
+  } else {
+    return `${days} dia${days > 1 ? 's' : ''}`
+  }
+}
+
+export default function Preview({ data, mobile = false }) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentPhoto, setCurrentPhoto] = useState(0)
+
+  useEffect(() => {
+    if (data.fotos && data.fotos.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentPhoto((prev) => (prev + 1) % data.fotos.length)
+      }, 3000)
+      return () => clearInterval(interval)
+    }
+  }, [data.fotos])
+
+  const timeTogether = calculateTimeTogether(data.dataInicio, data.horaInicio)
+  const videoId = extractYouTubeId(data.musicaUrl)
+
+  const Container = ({ children }) => (
+    mobile ? (
+      <div className="w-full max-w-sm mx-auto">{children}</div>
+    ) : (
+      <div className="w-[320px] mx-auto">{children}</div>
+    )
+  )
+
+  return (
+    <Container>
+      <div className="bg-black rounded-[40px] overflow-hidden shadow-2xl border-4 border-gray-800">
+        <div className="relative h-[600px] bg-gradient-to-b from-purple-900 via-dark-bg to-dark-bg overflow-y-auto">
+          <div className="p-4 space-y-4">
+            <div className="text-center py-4">
+              <h3 className="font-display text-2xl text-white glow-text">
+                {data.tituloPresente || 'Seu presente'}
+              </h3>
+              {data.nomeDestinataria && (
+                <p className="text-rose-400 font-accent text-xl mt-2">
+                  Para {data.nomeDestinataria}
+                </p>
+              )}
+            </div>
+
+            {timeTogether && (
+              <div className="text-center">
+                <div className="inline-block bg-gradient-to-r from-rose-600/30 to-purple-600/30 rounded-full px-6 py-2 border border-rose-500/30">
+                  <p className="text-white text-sm">
+                    <span className="text-rose-400">❤️</span> {timeTogether} juntos
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {data.fotos && data.fotos.length > 0 && (
+              <div className="relative h-48 rounded-2xl overflow-hidden">
+                {data.fotos.map((foto, index) => (
+                  <img
+                    key={index}
+                    src={URL.createObjectURL(foto)}
+                    alt={`Foto ${index + 1}`}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                      index === currentPhoto ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                ))}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                  {data.fotos.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        index === currentPhoto ? 'bg-rose-500' : 'bg-gray-500'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {videoId && (
+              <div className="bg-dark-card rounded-xl p-3">
+                <div className="relative">
+                  {!isPlaying ? (
+                    <>
+                      <img
+                        src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                        alt="Music thumbnail"
+                        className="w-full rounded-lg"
+                      />
+                      <button
+                        onClick={() => setIsPlaying(true)}
+                        className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg"
+                      >
+                        <div className="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center">
+                          <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </div>
+                      </button>
+                    </>
+                  ) : (
+                    <iframe
+                      className="w-full aspect-video rounded-lg"
+                      src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+                </div>
+                {(data.musicaTitulo || data.musicaArtista) && (
+                  <p className="text-white text-sm mt-2 text-center">
+                    {data.musicaTitulo} {data.musicaArtista && `- ${data.musicaArtista}`}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {data.mensagem && (
+              <div className="bg-dark-card/80 backdrop-blur rounded-xl p-4">
+                <p className="text-gray-300 text-center text-sm leading-relaxed italic">
+                  "{data.mensagem}"
+                </p>
+                <p className="text-rose-400 text-center text-xs mt-2">
+                  — {data.nomeRemetente || 'Seu amor'}
+                </p>
+              </div>
+            )}
+
+            {data.linhaTempo?.momentos?.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-white font-display text-center text-sm">
+                  {data.linhaTempo.titulo}
+                </h4>
+                {data.linhaTempo.momentos.slice(0, 3).map((m, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-dark-card/50 rounded-lg p-2">
+                    <div className="w-10 h-10 bg-rose-500/20 rounded-full flex items-center justify-center">
+                      <span className="text-rose-400 text-sm">❤️</span>
+                    </div>
+                    <div>
+                      <p className="text-white text-xs">{m.descricao}</p>
+                      <p className="text-gray-500 text-xs">{m.data}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {data.roleta?.opcoes?.length > 0 && (
+              <div className="bg-dark-card/50 rounded-xl p-3 text-center">
+                <p className="text-gray-400 text-xs">{data.roleta.pergunta}</p>
+                <div className="mt-2 flex justify-center gap-1 flex-wrap">
+                  {data.roleta.opcoes.slice(0, 4).map((op, i) => (
+                    <span
+                      key={i}
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        data.roleta.tema === 'rosa'
+                          ? 'bg-rose-500/30 text-rose-300'
+                          : 'bg-blue-500/30 text-blue-300'
+                      }`}
+                    >
+                      {op}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {data.jogoPalavra?.palavra && (
+              <div className="bg-dark-card/50 rounded-xl p-3">
+                <p className="text-gray-400 text-xs text-center mb-2">{data.jogoPalavra.pergunta}</p>
+                <div className="flex justify-center gap-1">
+                  {Array(data.jogoPalavra.palavra.length).fill(0).map((_, i) => (
+                    <div
+                      key={i}
+                      className="w-8 h-8 bg-dark-border rounded flex items-center justify-center text-white text-sm"
+                    >
+                      _
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {data.mapaEstrelas?.texto && (
+              <div className="bg-gradient-to-b from-purple-900 to-dark-bg rounded-xl p-4 text-center relative overflow-hidden h-32">
+                <div className="absolute inset-0">
+                  {[...Array(20)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        opacity: Math.random() * 0.5 + 0.5
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="text-gray-300 text-sm relative z-10">
+                  {data.mapaEstrelas.texto}
+                </p>
+                {data.mapaEstrelas.dataCidade && (
+                  <p className="text-rose-400 text-xs mt-1 relative z-10">
+                    {data.mapaEstrelas.dataCidade}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="text-center py-4">
+              <p className="text-gray-500 text-xs">
+                Feito com ❤️ por Amor Presente
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Container>
+  )
+}
