@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Mascote from '../components/Mascote'
 import Preview from '../components/Preview'
-import { uploadImage, savePresente, extractYouTubeId } from '../lib/supabase'
+import { uploadImage, uploadAudio, savePresente, extractYouTubeId } from '../lib/supabase'
+import {
+  AUDIO_DEFAULT_MESSAGE,
+  AUDIO_DEFAULT_TITLE,
+  getAudioExtension,
+  getSupportedRecordingMimeType,
+  validateAudioFile
+} from '../lib/audio'
 
 const STEPS = [
   { id: 1, title: 'Dados do Casal', icon: '💕' },
@@ -10,7 +17,8 @@ const STEPS = [
   { id: 3, title: 'Música', icon: '🎵' },
   { id: 4, title: 'Fotos', icon: '📸' },
   { id: 5, title: 'Mensagem', icon: '💌' },
-  { id: 6, title: 'Extras', icon: '🎁' }
+  { id: 6, title: 'Audio especial', icon: '🎙️' },
+  { id: 7, title: 'Extras', icon: '🎁' }
 ]
 
 const MASCOTE_MESSAGES = {
@@ -19,7 +27,8 @@ const MASCOTE_MESSAGES = {
   3: "Agora escolhe aquela música que lembra ela.",
   4: "Manda as fotos que vão fazer ela sorrir.",
   5: "Agora escreve aquela mensagem que bate no coração.",
-  6: "Quase pronto! Adicione os extras para deixar tudo mais especial."
+  6: "Se voce quiser fazer ela se emocionar de verdade, manda sua voz aqui.",
+  7: "Quase pronto! Adicione os extras para deixar tudo mais especial."
 }
 
 const SUGESTOES_MENSAGEM = [
@@ -44,6 +53,13 @@ export default function Creator() {
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [audioError, setAudioError] = useState(null)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingSeconds, setRecordingSeconds] = useState(0)
+  const recorderRef = useRef(null)
+  const chunksRef = useRef([])
+  const streamRef = useRef(null)
+  const timerRef = useRef(null)
 
   const [formData, setFormData] = useState({
     nomeRemetente: '',
@@ -58,6 +74,12 @@ export default function Creator() {
     mensagem: '',
     fotos: [],
     fotosUrls: [],
+    audioEspecial: {
+      titulo: AUDIO_DEFAULT_TITLE,
+      mensagem: AUDIO_DEFAULT_MESSAGE,
+      file: null,
+      previewUrl: ''
+    },
     linhaTempo: { titulo: 'Nossa História', subtitulo: 'Momentos especiais', momentos: [] },
     mapaEstrelas: { texto: 'Sob este céu estrellado, nosso amor nasceu', dataCidade: '' },
     jogoPalavra: { pergunta: 'Qual o nome do meu amor?', palavra: '', mensagemFinal: 'Acertou! Eu te amo!' },
@@ -67,6 +89,107 @@ export default function Creator() {
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
+
+  const updateAudioEspecial = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      audioEspecial: { ...prev.audioEspecial, [field]: value }
+    }))
+  }
+
+  const setAudioFile = (file, previewUrl) => {
+    setFormData(prev => {
+      if (prev.audioEspecial.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(prev.audioEspecial.previewUrl)
+      }
+      return {
+        ...prev,
+        audioEspecial: { ...prev.audioEspecial, file, previewUrl }
+      }
+    })
+  }
+
+  const clearAudioFile = () => {
+    setAudioFile(null, '')
+    setAudioError(null)
+  }
+
+  const stopAudioStream = () => {
+    streamRef.current?.getTracks?.().forEach((track) => track.stop())
+    streamRef.current = null
+  }
+
+  const stopRecordingTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = null
+  }
+
+  const startRecording = async () => {
+    setAudioError(null)
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setAudioError('Seu navegador nao liberou gravacao. Envie um arquivo de audio manualmente.')
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      chunksRef.current = []
+      const mimeType = getSupportedRecordingMimeType(MediaRecorder.isTypeSupported?.bind(MediaRecorder))
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      recorderRef.current = recorder
+
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size > 0) chunksRef.current.push(event.data)
+      }
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: mimeType || 'audio/webm' })
+        const tempFile = new File([blob], 'audio-gravado', { type: blob.type })
+        const file = new File([blob], `audio-${Date.now()}.${getAudioExtension(tempFile) || 'webm'}`, { type: blob.type || 'audio/webm' })
+        const validation = validateAudioFile(file)
+        stopRecordingTimer()
+        stopAudioStream()
+        setIsRecording(false)
+        if (!validation.valid) {
+          setAudioError(validation.error)
+          return
+        }
+        setAudioFile(file, URL.createObjectURL(file))
+      }
+
+      recorder.start()
+      setRecordingSeconds(0)
+      setIsRecording(true)
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((seconds) => seconds + 1)
+      }, 1000)
+    } catch {
+      stopRecordingTimer()
+      stopAudioStream()
+      setIsRecording(false)
+      setAudioError('Nao foi possivel acessar o microfone. Voce pode enviar um arquivo de audio.')
+    }
+  }
+
+  const stopRecording = () => {
+    if (recorderRef.current?.state === 'recording') recorderRef.current.stop()
+  }
+
+  const handleAudioUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const validation = validateAudioFile(file)
+    if (!validation.valid) {
+      setAudioError(validation.error)
+      e.target.value = ''
+      return
+    }
+    setAudioError(null)
+    setAudioFile(file, URL.createObjectURL(file))
+  }
+
+  const recordingLabel = `${String(Math.floor(recordingSeconds / 60)).padStart(2, '0')}:${String(recordingSeconds % 60).padStart(2, '0')}`
 
   const handleFotoUpload = async (e) => {
     const files = Array.from(e.target.files).slice(0, 6 - formData.fotos.length)
@@ -150,6 +273,16 @@ export default function Creator() {
     }))
   }
 
+  useEffect(() => {
+    return () => {
+      stopRecordingTimer()
+      stopAudioStream()
+      if (formData.audioEspecial.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(formData.audioEspecial.previewUrl)
+      }
+    }
+  }, [formData.audioEspecial.previewUrl])
+
   const handleSubmit = async () => {
     setIsLoading(true)
     setError(null)
@@ -162,6 +295,17 @@ export default function Creator() {
         for (let i = 0; i < formData.fotos.length; i++) {
           const url = await uploadImage(formData.fotos[i], slug, i)
           fotosUrls.push(url)
+        }
+      }
+
+      let audioEspecial = null
+      if (formData.audioEspecial.file) {
+        const audioUpload = await uploadAudio(formData.audioEspecial.file, slug)
+        audioEspecial = {
+          url: audioUpload.url,
+          path: audioUpload.path,
+          titulo: formData.audioEspecial.titulo || AUDIO_DEFAULT_TITLE,
+          mensagem: formData.audioEspecial.mensagem || AUDIO_DEFAULT_MESSAGE
         }
       }
 
@@ -184,13 +328,18 @@ export default function Creator() {
         linha_tempo: formData.linhaTempo.momentos.length > 0 ? formData.linhaTempo : null,
         mapa_estrelas: formData.mapaEstrelas.texto ? formData.mapaEstrelas : null,
         jogo_palavra: formData.jogoPalavra.palavra ? formData.jogoPalavra : null,
-        roleta: formData.roleta.opcoes.length > 0 ? formData.roleta : null
+        roleta: formData.roleta.opcoes.length > 0 ? formData.roleta : null,
+        audio_especial: audioEspecial
       }
 
       await savePresente(presenteData)
       navigate(`/sucesso?slug=${slug}`)
     } catch (err) {
       console.error('Erro ao salvar presente:', err)
+      if (err.message?.toLowerCase().includes('audio') || err.message?.includes('presentes-audios')) {
+        setStep(6)
+        setAudioError(err.message)
+      }
       setError(err.message || 'Erro ao criar presente. Tente novamente.')
     } finally {
       setIsLoading(false)
@@ -210,6 +359,8 @@ export default function Creator() {
       case 5:
         return formData.mensagem
       case 6:
+        return true
+      case 7:
         return true
       default:
         return false
@@ -454,6 +605,96 @@ export default function Creator() {
               )}
 
               {step === 6 && (
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Titulo do audio</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={formData.audioEspecial.titulo}
+                      onChange={(e) => updateAudioEspecial('titulo', e.target.value)}
+                      placeholder={AUDIO_DEFAULT_TITLE}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Mensagem antes do audio</label>
+                    <textarea
+                      className="input-field min-h-[90px]"
+                      value={formData.audioEspecial.mensagem}
+                      onChange={(e) => updateAudioEspecial('mensagem', e.target.value)}
+                      placeholder={AUDIO_DEFAULT_MESSAGE}
+                    />
+                  </div>
+
+                  <div className="rounded-2xl border border-dark-border bg-dark-border/30 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      {!isRecording ? (
+                        <button
+                          type="button"
+                          onClick={startRecording}
+                          className="btn-primary flex-1"
+                        >
+                          Gravar audio
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={stopRecording}
+                          className="flex-1 rounded-full bg-red-500 px-6 py-3 font-semibold text-white transition active:scale-95"
+                        >
+                          Parar gravacao {recordingLabel}
+                        </button>
+                      )}
+
+                      <label className="btn-secondary flex-1 cursor-pointer text-center">
+                        Enviar arquivo
+                        <input
+                          type="file"
+                          accept="audio/mpeg,audio/wav,audio/webm,audio/mp4,audio/x-m4a,audio/ogg,.mp3,.wav,.webm,.m4a,.mp4,.ogg"
+                          onChange={handleAudioUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <p className="mt-3 text-xs text-gray-500">
+                      MP3, WAV, WEBM, M4A, MP4 ou OGG. Ate 10MB.
+                    </p>
+
+                    {audioError && (
+                      <div className="mt-3 rounded-lg border border-red-500 bg-red-500/15 p-3 text-sm text-red-300">
+                        {audioError}
+                      </div>
+                    )}
+                  </div>
+
+                  {formData.audioEspecial.previewUrl && (
+                    <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-4">
+                      <p className="mb-3 text-sm font-semibold text-rose-200">Audio pronto para usar</p>
+                      <audio controls src={formData.audioEspecial.previewUrl} className="w-full" />
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={clearAudioFile}
+                          className="btn-secondary flex-1"
+                        >
+                          Regravar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAudioError(null)}
+                          className="btn-primary flex-1"
+                        >
+                          Usar este audio
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {step === 7 && (
                 <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
                   <div className="border border-dark-border rounded-xl p-4">
                     <h3 className="font-display text-lg text-white mb-3">📅 Linha do Tempo</h3>
@@ -651,7 +892,7 @@ export default function Creator() {
                     Voltar
                   </button>
                 )}
-                {step < 6 ? (
+                {step < STEPS.length ? (
                   <button
                     onClick={() => setStep(step + 1)}
                     disabled={!isStepValid()}

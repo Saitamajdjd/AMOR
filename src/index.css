@@ -84,3 +84,40 @@ body {
 .pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+@keyframes slideFromRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideFromLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@keyframes slideToRight {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(100%);  opacity: 0; }
+}
+
+@keyframes slideToLeft {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-100%); opacity: 0; }
+}
+
+@keyframes barFill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+.stories-slide-enter-next {
+  animation: slideFromRight 0.35s ease-out forwards;
+}
+
+.stories-slide-enter-prev {
+  animation: slideFromLeft 0.35s ease-out forwards;
+}
+
+.stories-bar-animate {
+  animation: barFill 3s linear forwards;
+}

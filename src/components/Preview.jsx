@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { memo, useState, useEffect, useMemo, useRef } from 'react'
 import { extractYouTubeId } from '../lib/supabase'
 
 function calculateTimeTogether(dataInicio, horaInicio) {
@@ -27,9 +27,73 @@ function calculateTimeTogether(dataInicio, horaInicio) {
   }
 }
 
-export default function Preview({ data, mobile = false }) {
+const YouTubePreviewPlayer = memo(function YouTubePreviewPlayer({ videoId, title, artist }) {
   const [isPlaying, setIsPlaying] = useState(false)
+  const iframeSrc = useMemo(() => {
+    if (!videoId || !isPlaying) return ''
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`
+  }, [videoId, isPlaying])
+
+  useEffect(() => {
+    setIsPlaying(false)
+  }, [videoId])
+
+  if (!videoId) return null
+
+  return (
+    <div className="bg-dark-card rounded-xl p-3">
+      <div className="relative">
+        {!isPlaying ? (
+          <>
+            <img
+              src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+              alt="Music thumbnail"
+              className="w-full rounded-lg"
+            />
+            <button
+              type="button"
+              onClick={() => setIsPlaying(true)}
+              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg"
+            >
+              <div className="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </button>
+          </>
+        ) : (
+          <div>
+            <iframe
+              key={videoId}
+              className="w-full aspect-video rounded-lg"
+              src={iframeSrc}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+            <button
+              type="button"
+              onClick={() => setIsPlaying(false)}
+              className="mt-3 h-10 w-full rounded-full border border-white/15 bg-white/10 text-xs font-black text-white"
+            >
+              Pausar preview
+            </button>
+          </div>
+        )}
+      </div>
+      {(title || artist) && (
+        <p className="text-white text-sm mt-2 text-center">
+          {title} {artist && `- ${artist}`}
+        </p>
+      )}
+    </div>
+  )
+})
+
+export default function Preview({ data, mobile = false }) {
+  const [audioPlaying, setAudioPlaying] = useState(false)
   const [currentPhoto, setCurrentPhoto] = useState(0)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     if (data.fotos && data.fotos.length > 0) {
@@ -42,6 +106,19 @@ export default function Preview({ data, mobile = false }) {
 
   const timeTogether = calculateTimeTogether(data.dataInicio, data.horaInicio)
   const videoId = extractYouTubeId(data.musicaUrl)
+  const audioEspecial = data.audioEspecial
+
+  const toggleAudioPreview = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) {
+      audio.play()
+      setAudioPlaying(true)
+    } else {
+      audio.pause()
+      setAudioPlaying(false)
+    }
+  }
 
   const Container = ({ children }) => (
     mobile ? (
@@ -102,43 +179,11 @@ export default function Preview({ data, mobile = false }) {
               </div>
             )}
 
-            {videoId && (
-              <div className="bg-dark-card rounded-xl p-3">
-                <div className="relative">
-                  {!isPlaying ? (
-                    <>
-                      <img
-                        src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
-                        alt="Music thumbnail"
-                        className="w-full rounded-lg"
-                      />
-                      <button
-                        onClick={() => setIsPlaying(true)}
-                        className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg"
-                      >
-                        <div className="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center">
-                          <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        </div>
-                      </button>
-                    </>
-                  ) : (
-                    <iframe
-                      className="w-full aspect-video rounded-lg"
-                      src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  )}
-                </div>
-                {(data.musicaTitulo || data.musicaArtista) && (
-                  <p className="text-white text-sm mt-2 text-center">
-                    {data.musicaTitulo} {data.musicaArtista && `- ${data.musicaArtista}`}
-                  </p>
-                )}
-              </div>
-            )}
+            <YouTubePreviewPlayer
+              videoId={videoId}
+              title={data.musicaTitulo}
+              artist={data.musicaArtista}
+            />
 
             {data.mensagem && (
               <div className="bg-dark-card/80 backdrop-blur rounded-xl p-4">
@@ -148,6 +193,45 @@ export default function Preview({ data, mobile = false }) {
                 <p className="text-rose-400 text-center text-xs mt-2">
                   — {data.nomeRemetente || 'Seu amor'}
                 </p>
+              </div>
+            )}
+
+            {audioEspecial?.previewUrl && (
+              <div className="rounded-2xl border border-rose-400/25 bg-gradient-to-br from-zinc-950 to-rose-950/70 p-4 shadow-xl">
+                <p className="text-center text-[10px] font-bold uppercase tracking-[0.22em] text-rose-200/70">
+                  Audio especial
+                </p>
+                <h4 className="mt-2 text-center font-display text-2xl leading-none text-white">
+                  {audioEspecial.titulo || 'Escuta isso com carinho'}
+                </h4>
+                {audioEspecial.mensagem && (
+                  <p className="mt-2 text-center text-xs leading-relaxed text-white/65">
+                    {audioEspecial.mensagem}
+                  </p>
+                )}
+                <div className="mt-4 flex items-end justify-center gap-1.5">
+                  {[22, 34, 48, 28, 40, 26, 44].map((height, index) => (
+                    <span
+                      key={index}
+                      className={`w-2 rounded-full bg-rose-300/80 ${audioPlaying ? 'animate-pulse' : ''}`}
+                      style={{ height }}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleAudioPreview}
+                  className="mt-4 h-12 w-full rounded-full bg-white text-sm font-black text-black active:scale-95"
+                >
+                  {audioPlaying ? 'Pausar' : 'Tocar audio'}
+                </button>
+                <audio
+                  ref={audioRef}
+                  src={audioEspecial.previewUrl}
+                  onEnded={() => setAudioPlaying(false)}
+                  onPlay={() => setAudioPlaying(true)}
+                  onPause={() => setAudioPlaying(false)}
+                />
               </div>
             )}
 

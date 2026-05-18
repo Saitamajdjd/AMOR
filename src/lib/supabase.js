@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { buildAudioStoragePath, getAudioContentType, validateAudioFile } from './audio'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -12,6 +13,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
   : null
 
 export const STORAGE_BUCKET = 'presentes-imagens'
+export const AUDIO_STORAGE_BUCKET = 'presentes-audios'
 
 export async function uploadImage(file, slug, index) {
   if (!supabase) throw new Error('Supabase not configured')
@@ -30,6 +32,32 @@ export async function uploadImage(file, slug, index) {
     .getPublicUrl(path)
 
   return urlData.publicUrl
+}
+
+export async function uploadAudio(file, slug) {
+  if (!supabase) throw new Error('Supabase not configured')
+
+  const validation = validateAudioFile(file)
+  if (!validation.valid) throw new Error(validation.error)
+
+  const path = buildAudioStoragePath(file, slug)
+
+  const { error } = await supabase.storage
+    .from(AUDIO_STORAGE_BUCKET)
+    .upload(path, file, { contentType: getAudioContentType(file) })
+
+  if (error) {
+    const rlsMessage = error.message?.includes('row-level security')
+      ? 'Upload bloqueado pelo Supabase Storage RLS. Confira a policy de INSERT no bucket presentes-audios.'
+      : error.message
+    throw new Error(rlsMessage)
+  }
+
+  const { data: urlData } = supabase.storage
+    .from(AUDIO_STORAGE_BUCKET)
+    .getPublicUrl(path)
+
+  return { url: urlData.publicUrl, path }
 }
 
 export async function savePresente(data) {
