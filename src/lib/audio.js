@@ -31,11 +31,15 @@ const EXTENSION_MIME = {
 
 const RECORDING_MIME_TYPES = ['audio/webm', 'audio/mp4', 'audio/x-m4a', 'audio/ogg']
 
+export function normalizeAudioMimeType(type) {
+  return type?.split(';')[0]?.trim().toLowerCase() || ''
+}
+
 export function getAudioExtension(file) {
   const fromName = file?.name?.split('.').pop()?.toLowerCase()
   if (fromName && EXTENSION_MIME[fromName]) return fromName
   if (fromName && file?.name?.includes('.')) return fromName
-  return MIME_EXTENSION[file?.type] || ''
+  return MIME_EXTENSION[normalizeAudioMimeType(file?.type)] || ''
 }
 
 export function validateAudioFile(file) {
@@ -44,7 +48,7 @@ export function validateAudioFile(file) {
   }
 
   const extension = getAudioExtension(file)
-  const allowedByType = AUDIO_ALLOWED_MIME_TYPES.includes(file.type)
+  const allowedByType = AUDIO_ALLOWED_MIME_TYPES.includes(normalizeAudioMimeType(file.type))
   const allowedByExtension = Boolean(EXTENSION_MIME[extension])
 
   if (!allowedByType && !allowedByExtension) {
@@ -64,7 +68,7 @@ export function buildAudioStoragePath(file, slug, timestamp = Date.now(), random
 }
 
 export function getAudioContentType(file) {
-  return file?.type || EXTENSION_MIME[getAudioExtension(file)] || 'audio/webm'
+  return normalizeAudioMimeType(file?.type) || EXTENSION_MIME[getAudioExtension(file)] || 'audio/webm'
 }
 
 export function getSupportedRecordingMimeType(isTypeSupported) {

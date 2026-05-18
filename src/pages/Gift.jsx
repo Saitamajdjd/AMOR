@@ -31,6 +31,8 @@ export default function Gift() {
   const musicIframeRef = useRef(null)
   const musicReadyRef = useRef(false)
   const musicWantedRef = useRef(false)
+  const pointerStartRef = useRef(null)
+  const pointerLockRef = useRef(false)
 
   useEffect(() => {
     async function fetchPresente() {
@@ -161,6 +163,41 @@ export default function Gift() {
     [isAnimating, currentSlide, slides.length]
   )
 
+  const isStoryBlockedTarget = useCallback((target) => {
+    return target?.closest?.('[data-story-interactive],[data-story-controls],input,textarea,button,a,details,summary,audio')
+  }, [])
+
+  const handleStoryPointerDown = useCallback(
+    (e) => {
+      if (isAnimating || isStoryBlockedTarget(e.target)) {
+        pointerStartRef.current = null
+        return
+      }
+      pointerStartRef.current = { x: e.clientX, y: e.clientY, pointerId: e.pointerId }
+    },
+    [isAnimating, isStoryBlockedTarget]
+  )
+
+  const handleStoryPointerUp = useCallback(
+    (e) => {
+      const start = pointerStartRef.current
+      pointerStartRef.current = null
+      if (!start || start.pointerId !== e.pointerId || pointerLockRef.current) return
+      if (isStoryBlockedTarget(e.target)) return
+      if (Math.abs(e.clientX - start.x) > 18 || Math.abs(e.clientY - start.y) > 18) return
+
+      pointerLockRef.current = true
+      setTimeout(() => {
+        pointerLockRef.current = false
+      }, 360)
+
+      const bounds = e.currentTarget.getBoundingClientRect()
+      const isLeftSide = e.clientX - bounds.left < bounds.width / 2
+      goToSlide(currentSlide + (isLeftSide ? -1 : 1))
+    },
+    [currentSlide, goToSlide, isStoryBlockedTarget]
+  )
+
   const handleIframeLoad = useCallback(() => {
     musicReadyRef.current = true
     youtubeCommand(musicIframeRef.current, 'addEventListener', ['onStateChange'])
@@ -274,6 +311,11 @@ export default function Gift() {
       <main
         className="relative h-[100dvh] w-full max-w-[430px] overflow-hidden bg-black shadow-[0_0_120px_rgba(244,63,94,.28)] md:h-[92dvh] md:max-h-[880px] md:rounded-[2.25rem] md:border md:border-white/10"
         style={{ touchAction: 'manipulation' }}
+        onPointerDownCapture={handleStoryPointerDown}
+        onPointerUpCapture={handleStoryPointerUp}
+        onPointerCancelCapture={() => {
+          pointerStartRef.current = null
+        }}
       >
         <div className="absolute left-0 right-0 top-0 z-50 flex gap-1 px-3 pb-2 pt-3 pointer-events-none">
           {slides.map((slide, i) => (

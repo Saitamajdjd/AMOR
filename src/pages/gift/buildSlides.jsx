@@ -131,7 +131,7 @@ export function buildSlides(presente, options) {
       interactive: true,
       render: () => (
         <SlideShell tone="spotify">
-          <div className="flex h-full flex-col justify-between gap-5 pointer-events-auto" data-story-interactive onClick={stopStory} onTouchStart={stopStory} onPointerDown={stopStory}>
+          <div className="flex h-full flex-col justify-between gap-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-300">Nossa trilha</p>
               <h2 className="mt-2 font-display text-4xl leading-none text-white">A musica que toca essa historia</h2>
@@ -161,7 +161,8 @@ export function buildSlides(presente, options) {
                 onClick={onToggleMusic}
                 onTouchStart={stopStory}
                 onPointerDown={stopStory}
-                className="mt-5 flex h-14 w-full items-center justify-center rounded-full bg-emerald-400 text-base font-black text-black shadow-[0_14px_45px_rgba(52,211,153,.35)] active:scale-95"
+                data-story-controls
+                className="pointer-events-auto mt-5 flex h-14 w-full items-center justify-center rounded-full bg-emerald-400 text-base font-black text-black shadow-[0_14px_45px_rgba(52,211,153,.35)] active:scale-95"
               >
                 {musicPlaying ? 'Pausar musica' : 'Tocar musica'}
               </button>
@@ -375,12 +376,18 @@ export function buildSlides(presente, options) {
       interactive: true,
       render: () => (
         <SlideShell tone="letter">
-          <div className="pointer-events-auto flex h-full flex-col justify-center gap-5" data-story-interactive onClick={stopStory} onTouchStart={stopStory}>
+          <div className="pointer-events-auto flex h-full flex-col justify-center gap-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.28em] text-amber-200/80">Leia so no final</p>
               <h2 className="mt-2 font-display text-5xl leading-none text-white">Carta final</h2>
             </div>
-            <details className="group rounded-[2rem] border border-amber-200/20 bg-amber-50/95 p-5 text-zinc-950 shadow-2xl open:animate-fade-in">
+            <details
+              className="group rounded-[2rem] border border-amber-200/20 bg-amber-50/95 p-5 text-zinc-950 shadow-2xl open:animate-fade-in"
+              data-story-interactive
+              onClick={stopStory}
+              onTouchStart={stopStory}
+              onPointerDown={stopStory}
+            >
               <summary className="cursor-pointer list-none text-center font-black text-rose-700" onClick={stopStory}>
                 Abrir carta
               </summary>
@@ -398,7 +405,7 @@ export function buildSlides(presente, options) {
     interactive: true,
     render: () => (
       <SlideShell tone="final">
-        <div className="pointer-events-auto flex h-full flex-col justify-between gap-6" data-story-interactive onClick={stopStory} onTouchStart={stopStory} onPointerDown={stopStory}>
+        <div className="pointer-events-auto flex h-full flex-col justify-between gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-rose-200/70">Final</p>
             <h2 className="mt-3 font-display text-6xl leading-[0.9] text-white">Eu te amo.</h2>

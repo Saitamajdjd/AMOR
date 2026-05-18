@@ -7,6 +7,7 @@ import {
   buildAudioStoragePath,
   getAudioContentType,
   getAudioExtension,
+  normalizeAudioMimeType,
   getSupportedRecordingMimeType,
   validateAudioFile
 } from './audio.js'
@@ -53,6 +54,14 @@ test('detects extension from filename or MIME type', () => {
   assert.equal(getAudioExtension(fileLike('recording', 'audio/webm')), 'webm')
   assert.equal(getAudioExtension(fileLike('voz', 'audio/mp4')), 'mp4')
   assert.equal(getAudioExtension(fileLike('voz', 'audio/ogg')), 'ogg')
+})
+
+test('accepts browser MIME types with codec parameters', () => {
+  const result = validateAudioFile(fileLike('recording', 'audio/mp4;codecs=mp4a.40.2', 2048))
+
+  assert.deepEqual(result, { valid: true, error: null })
+  assert.equal(normalizeAudioMimeType('audio/webm;codecs=opus'), 'audio/webm')
+  assert.equal(getAudioContentType(fileLike('recording', 'audio/mp4;codecs=mp4a.40.2')), 'audio/mp4')
 })
 
 test('falls back to audio/webm content type when file type is empty', () => {

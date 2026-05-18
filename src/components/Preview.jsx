@@ -90,19 +90,44 @@ const YouTubePreviewPlayer = memo(function YouTubePreviewPlayer({ videoId, title
   )
 })
 
+function useObjectUrls(files) {
+  const urls = useMemo(() => (files || []).map((file) => URL.createObjectURL(file)), [files])
+
+  useEffect(() => {
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [urls])
+
+  return urls
+}
+
 export default function Preview({ data, mobile = false }) {
   const [audioPlaying, setAudioPlaying] = useState(false)
   const [currentPhoto, setCurrentPhoto] = useState(0)
   const audioRef = useRef(null)
+  const photoUrls = useObjectUrls(data.fotos)
+  const stars = useMemo(
+    () => Array.from({ length: 20 }, (_, i) => ({
+      left: `${(i * 37) % 100}%`,
+      top: `${(i * 53) % 100}%`,
+      opacity: 0.5 + (i % 5) * 0.1
+    })),
+    []
+  )
 
   useEffect(() => {
-    if (data.fotos && data.fotos.length > 0) {
+    if (photoUrls.length > 0) {
       const interval = setInterval(() => {
-        setCurrentPhoto((prev) => (prev + 1) % data.fotos.length)
+        setCurrentPhoto((prev) => (prev + 1) % photoUrls.length)
       }, 3000)
       return () => clearInterval(interval)
     }
-  }, [data.fotos])
+  }, [photoUrls.length])
+
+  useEffect(() => {
+    setCurrentPhoto((photo) => Math.min(photo, Math.max(0, photoUrls.length - 1)))
+  }, [photoUrls.length])
 
   const timeTogether = calculateTimeTogether(data.dataInicio, data.horaInicio)
   const videoId = extractYouTubeId(data.musicaUrl)
@@ -122,7 +147,7 @@ export default function Preview({ data, mobile = false }) {
 
   const Container = ({ children }) => (
     mobile ? (
-      <div className="w-full max-w-sm mx-auto">{children}</div>
+      <div className="mx-auto w-full max-w-[360px]">{children}</div>
     ) : (
       <div className="w-[320px] mx-auto">{children}</div>
     )
@@ -131,7 +156,7 @@ export default function Preview({ data, mobile = false }) {
   return (
     <Container>
       <div className="bg-black rounded-[40px] overflow-hidden shadow-2xl border-4 border-gray-800">
-        <div className="relative h-[600px] bg-gradient-to-b from-purple-900 via-dark-bg to-dark-bg overflow-y-auto">
+        <div className="relative h-[560px] bg-gradient-to-b from-purple-900 via-dark-bg to-dark-bg overflow-y-auto sm:h-[600px]">
           <div className="p-4 space-y-4">
             <div className="text-center py-4">
               <h3 className="font-display text-2xl text-white glow-text">
@@ -154,12 +179,12 @@ export default function Preview({ data, mobile = false }) {
               </div>
             )}
 
-            {data.fotos && data.fotos.length > 0 && (
+            {photoUrls.length > 0 && (
               <div className="relative h-48 rounded-2xl overflow-hidden">
-                {data.fotos.map((foto, index) => (
+                {photoUrls.map((foto, index) => (
                   <img
                     key={index}
-                    src={URL.createObjectURL(foto)}
+                    src={foto}
                     alt={`Foto ${index + 1}`}
                     className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
                       index === currentPhoto ? 'opacity-100' : 'opacity-0'
@@ -167,7 +192,7 @@ export default function Preview({ data, mobile = false }) {
                   />
                 ))}
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                  {data.fotos.map((_, index) => (
+                  {photoUrls.map((_, index) => (
                     <div
                       key={index}
                       className={`w-2 h-2 rounded-full transition-colors ${
@@ -293,14 +318,14 @@ export default function Preview({ data, mobile = false }) {
             {data.mapaEstrelas?.texto && (
               <div className="bg-gradient-to-b from-purple-900 to-dark-bg rounded-xl p-4 text-center relative overflow-hidden h-32">
                 <div className="absolute inset-0">
-                  {[...Array(20)].map((_, i) => (
+                  {stars.map((star, i) => (
                     <div
                       key={i}
                       className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
                       style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        opacity: Math.random() * 0.5 + 0.5
+                        left: star.left,
+                        top: star.top,
+                        opacity: star.opacity
                       }}
                     />
                   ))}

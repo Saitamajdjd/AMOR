@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Mascote from '../components/Mascote'
 import Preview from '../components/Preview'
@@ -48,6 +48,18 @@ function generateSlug() {
   return slug
 }
 
+function useObjectUrls(files) {
+  const urls = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files])
+
+  useEffect(() => {
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [urls])
+
+  return urls
+}
+
 export default function Creator() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
@@ -85,6 +97,8 @@ export default function Creator() {
     jogoPalavra: { pergunta: 'Qual o nome do meu amor?', palavra: '', mensagemFinal: 'Acertou! Eu te amo!' },
     roleta: { pergunta: 'O que eu mais amo em você?', tema: 'rosa', opcoes: [] }
   })
+
+  const fotoPreviewUrls = useObjectUrls(formData.fotos)
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -143,22 +157,41 @@ export default function Creator() {
         if (event.data?.size > 0) chunksRef.current.push(event.data)
       }
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType || 'audio/webm' })
-        const tempFile = new File([blob], 'audio-gravado', { type: blob.type })
-        const file = new File([blob], `audio-${Date.now()}.${getAudioExtension(tempFile) || 'webm'}`, { type: blob.type || 'audio/webm' })
-        const validation = validateAudioFile(file)
+      recorder.onerror = () => {
         stopRecordingTimer()
         stopAudioStream()
         setIsRecording(false)
-        if (!validation.valid) {
-          setAudioError(validation.error)
-          return
-        }
-        setAudioFile(file, URL.createObjectURL(file))
+        setAudioError('A gravacao falhou neste navegador. Envie um arquivo de audio manualmente.')
       }
 
-      recorder.start()
+      recorder.onstop = () => {
+        stopRecordingTimer()
+        stopAudioStream()
+        setIsRecording(false)
+        try {
+          const recordedType = chunksRef.current[0]?.type || mimeType || 'audio/webm'
+          const blob = new Blob(chunksRef.current, { type: recordedType })
+          if (!blob.size) {
+            setAudioError('Nao foi possivel gerar o audio. Tente gravar novamente ou envie um arquivo.')
+            return
+          }
+          const tempFile = { name: 'audio-gravado', type: blob.type, size: blob.size }
+          const fileName = `audio-${Date.now()}.${getAudioExtension(tempFile) || 'webm'}`
+          const file = typeof File === 'function'
+            ? new File([blob], fileName, { type: blob.type || 'audio/webm' })
+            : Object.assign(blob, { name: fileName })
+          const validation = validateAudioFile(file)
+          if (!validation.valid) {
+            setAudioError(validation.error)
+            return
+          }
+          setAudioFile(file, URL.createObjectURL(file))
+        } catch {
+          setAudioError('Nao foi possivel finalizar a gravacao. Tente novamente ou envie um arquivo.')
+        }
+      }
+
+      recorder.start(1000)
       setRecordingSeconds(0)
       setIsRecording(true)
       timerRef.current = setInterval(() => {
@@ -173,7 +206,14 @@ export default function Creator() {
   }
 
   const stopRecording = () => {
-    if (recorderRef.current?.state === 'recording') recorderRef.current.stop()
+    if (recorderRef.current?.state === 'recording') {
+      try {
+        recorderRef.current.requestData?.()
+      } catch {
+        // Alguns navegadores mobile nao aceitam requestData antes do stop.
+      }
+      recorderRef.current.stop()
+    }
   }
 
   const handleAudioUpload = (e) => {
@@ -368,9 +408,9 @@ export default function Creator() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg p-4 md:p-8">
+    <div className="min-h-screen overflow-x-hidden bg-dark-bg px-3 py-4 sm:px-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between gap-3">
           <button
             onClick={() => navigate('/')}
             className="text-gray-400 hover:text-white transition-colors"
@@ -380,7 +420,7 @@ export default function Creator() {
             </svg>
           </button>
 
-          <div className="flex gap-2">
+          <div className="flex min-w-0 flex-1 justify-center gap-2">
             {STEPS.map((s) => (
               <div
                 key={s.id}
@@ -398,9 +438,9 @@ export default function Creator() {
           <div className="w-6" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
           <div className="lg:order-1">
-            <div className="card-glass glow-card mb-6">
+            <div className="card-glass glow-card mb-6 w-full max-w-full">
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-2xl">{STEPS[step - 1].icon}</span>
                 <h2 className="font-display text-2xl text-white">{STEPS[step - 1].title}</h2>
@@ -564,7 +604,7 @@ export default function Creator() {
                       {formData.fotos.map((foto, index) => (
                         <div key={index} className="relative">
                           <img
-                            src={URL.createObjectURL(foto)}
+                            src={fotoPreviewUrls[index]}
                             alt={`Foto ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg"
                           />
@@ -633,7 +673,7 @@ export default function Creator() {
                         <button
                           type="button"
                           onClick={startRecording}
-                          className="btn-primary flex-1"
+                          className="btn-primary min-h-12 flex-1 px-4"
                         >
                           Gravar audio
                         </button>
@@ -641,13 +681,13 @@ export default function Creator() {
                         <button
                           type="button"
                           onClick={stopRecording}
-                          className="flex-1 rounded-full bg-red-500 px-6 py-3 font-semibold text-white transition active:scale-95"
+                          className="min-h-12 flex-1 rounded-full bg-red-500 px-4 py-3 font-semibold text-white transition active:scale-95"
                         >
                           Parar gravacao {recordingLabel}
                         </button>
                       )}
 
-                      <label className="btn-secondary flex-1 cursor-pointer text-center">
+                      <label className="btn-secondary min-h-12 flex-1 cursor-pointer px-4 text-center">
                         Enviar arquivo
                         <input
                           type="file"
@@ -695,7 +735,7 @@ export default function Creator() {
               )}
 
               {step === 7 && (
-                <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+                <div className="max-h-none space-y-6 overflow-visible pr-0 lg:max-h-[500px] lg:overflow-y-auto lg:pr-2">
                   <div className="border border-dark-border rounded-xl p-4">
                     <h3 className="font-display text-lg text-white mb-3">📅 Linha do Tempo</h3>
                     <div className="space-y-3 mb-3">
@@ -820,7 +860,7 @@ export default function Creator() {
                       }))}
                       placeholder="Pergunta da roleta"
                     />
-                    <div className="flex gap-2 mb-3">
+                    <div className="mb-3 flex flex-wrap gap-2">
                       <button
                         onClick={() => setFormData(prev => ({
                           ...prev,
@@ -849,7 +889,7 @@ export default function Creator() {
                       </button>
                     </div>
                     {formData.roleta.opcoes.map((opcao, index) => (
-                      <div key={index} className="flex gap-2 mb-2">
+                      <div key={index} className="mb-2 flex min-w-0 gap-2">
                         <input
                           type="text"
                           className="input-field flex-1"
@@ -883,11 +923,11 @@ export default function Creator() {
                 </div>
               )}
 
-              <div className="flex gap-3 mt-6">
+              <div className="mt-6 flex gap-3">
                 {step > 1 && (
                   <button
                     onClick={() => setStep(step - 1)}
-                    className="btn-secondary flex-1"
+                    className="btn-secondary min-h-12 flex-1 px-4"
                   >
                     Voltar
                   </button>
@@ -896,7 +936,7 @@ export default function Creator() {
                   <button
                     onClick={() => setStep(step + 1)}
                     disabled={!isStepValid()}
-                    className={`btn-primary flex-1 ${!isStepValid() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`btn-primary min-h-12 flex-1 px-4 ${!isStepValid() ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     Próximo
                   </button>
@@ -904,7 +944,7 @@ export default function Creator() {
                   <button
                     onClick={handleSubmit}
                     disabled={!isStepValid() || isLoading}
-                    className={`btn-primary flex-1 ${!isStepValid() || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`btn-primary min-h-12 flex-1 px-4 ${!isStepValid() || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {isLoading ? 'Criando...' : 'Criar Presente'}
                   </button>
@@ -921,7 +961,7 @@ export default function Creator() {
           </div>
         </div>
 
-        <div className="lg:hidden mt-8">
+        <div className="mt-8 lg:hidden">
           <h3 className="font-display text-lg text-white mb-4 text-center">Prévia ao Vivo</h3>
           <Preview data={formData} mobile />
         </div>

@@ -70,7 +70,7 @@ export function StarMap({ data }) {
 
 export function Timeline({ data }) {
   return (
-    <div className="space-y-4 pb-4 pointer-events-auto" data-story-interactive onClick={stopBubble} onTouchStart={stopBubble}>
+    <div className="space-y-4 pb-4">
       {data.momentos.map((momento, index) => (
         <article key={index} className={`relative rounded-[1.75rem] border border-white/10 bg-white/[0.07] p-4 shadow-2xl backdrop-blur ${index % 2 ? 'rotate-1' : '-rotate-1'}`}>
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -113,10 +113,6 @@ export function Roulette({ data }) {
   return (
     <div
       className="pointer-events-auto rounded-[2rem] border border-white/10 bg-black/35 p-5 shadow-2xl backdrop-blur"
-      data-story-interactive
-      onClick={stopBubble}
-      onTouchStart={stopBubble}
-      onPointerDown={stopBubble}
     >
       <p className="mb-5 text-center text-lg font-bold leading-snug text-white">{data.pergunta || 'O que o destino escolhe agora?'}</p>
       <div className="relative mx-auto mb-6 h-60 w-60">
@@ -139,6 +135,7 @@ export function Roulette({ data }) {
         onTouchStart={stopBubble}
         onPointerDown={stopBubble}
         disabled={spinning}
+        data-story-controls
         className="h-14 w-full rounded-full bg-gradient-to-r from-rose-500 to-fuchsia-500 text-base font-black text-white shadow-[0_16px_50px_rgba(244,63,94,.35)] disabled:opacity-60 active:scale-95"
       >
         {spinning ? 'Girando...' : 'Girar roleta'}
@@ -169,8 +166,12 @@ export function AudioPlayer({ url, titulo, mensagem, onPlay, pauseSignal, isActi
     const audio = audioRef.current
     if (!audio) return
     onPlay?.()
-    await audio.play()
-    setPlaying(true)
+    try {
+      await audio.play()
+      setPlaying(true)
+    } catch {
+      setPlaying(false)
+    }
   }
 
   const toggle = (e) => {
@@ -196,10 +197,6 @@ export function AudioPlayer({ url, titulo, mensagem, onPlay, pauseSignal, isActi
   return (
     <div
       className="pointer-events-auto flex h-full flex-col justify-center gap-5"
-      data-story-interactive
-      onClick={stopBubble}
-      onTouchStart={stopBubble}
-      onPointerDown={stopBubble}
     >
       <div className="text-center">
         <div className="mx-auto mb-3 flex h-28 w-28 items-center justify-center rounded-full bg-emerald-400/15">
@@ -238,6 +235,7 @@ export function AudioPlayer({ url, titulo, mensagem, onPlay, pauseSignal, isActi
           onClick={toggle}
           onTouchStart={stopBubble}
           onPointerDown={stopBubble}
+          data-story-controls
           className="mt-6 h-16 w-full rounded-full bg-white text-lg font-black text-black shadow-2xl active:scale-95"
         >
           {playing ? 'Pausar audio' : 'Tocar audio'}
@@ -247,6 +245,7 @@ export function AudioPlayer({ url, titulo, mensagem, onPlay, pauseSignal, isActi
           onClick={replay}
           onTouchStart={stopBubble}
           onPointerDown={stopBubble}
+          data-story-controls
           className="mt-3 h-12 w-full rounded-full border border-white/15 bg-white/10 text-sm font-black text-white backdrop-blur active:scale-95"
         >
           Ouvir novamente
