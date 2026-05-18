@@ -316,7 +316,7 @@ export function buildSlides(presente, options) {
       id: 'jogo-palavra',
       interactive: true,
       render: () => (
-        <SlideShell tone="game">
+        <SlideShell tone="game" scroll>
           <div className="mb-4">
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-200/80">Desafio</p>
             <h2 className="mt-2 font-display text-4xl leading-none text-white">Jogo da palavra</h2>

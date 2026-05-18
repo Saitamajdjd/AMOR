@@ -36,24 +36,24 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center bg-gradient-to-r from-rose-600 to-purple-600 text-center text-white font-semibold py-3 px-8 rounded-full
-           hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg
-           hover:shadow-rose-500/30;
+    @apply inline-flex items-center justify-center bg-gradient-to-r from-rose-600 via-pink-600 to-purple-600 text-center text-white font-semibold py-3 px-8 rounded-full
+           hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg
+           shadow-rose-950/40 hover:shadow-rose-500/30 disabled:hover:scale-100;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center border-2 border-rose-500 text-center text-rose-400 font-semibold py-2 px-6 rounded-full
-           hover:bg-rose-500/10 transition-all duration-300;
+    @apply inline-flex items-center justify-center border border-rose-400/45 bg-white/[0.03] text-center text-rose-200 font-semibold py-2 px-6 rounded-full
+           hover:border-rose-300 hover:bg-rose-500/10 transition-all duration-300;
   }
 
   .input-field {
-    @apply w-full min-w-0 bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-white
-           placeholder-gray-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/50
+    @apply w-full min-w-0 bg-black/35 border border-white/10 rounded-2xl px-4 py-3.5 text-white shadow-inner shadow-black/20
+           placeholder-gray-500 focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-500/20
            transition-all duration-300;
   }
 
   .card-glass {
-    @apply bg-dark-card/80 backdrop-blur-md border border-dark-border rounded-2xl p-4 sm:p-6;
+    @apply bg-zinc-950/70 backdrop-blur-xl border border-white/10 rounded-[1.75rem] p-4 sm:p-6;
   }
 
   .glow-text {
@@ -120,4 +120,118 @@ body {
 
 .stories-bar-animate {
   animation: barFill 3s linear forwards;
+}
+
+@keyframes creatorFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mascotFloat {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@keyframes mascotDance {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
+}
+
+@keyframes mascotBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.02); }
+}
+
+@keyframes mascotPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(244,63,94,0)); }
+  50% { transform: scale(1.025); filter: drop-shadow(0 0 16px rgba(244,63,94,.3)); }
+}
+
+@keyframes softPop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.06); }
+}
+
+@keyframes noteFloat {
+  0% { opacity: 0; transform: translateY(8px) scale(.9); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-24px) scale(1.08); }
+}
+
+@keyframes softTwinkle {
+  0%, 100% { opacity: .35; transform: scale(.9); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+
+@keyframes eyeBlink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(.12); }
+}
+
+@keyframes armWave {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-8deg); }
+}
+
+.creator-step-enter {
+  animation: creatorFadeUp .32s ease-out both;
+}
+
+.mascot-float,
+.mascot-wave {
+  animation: mascotFloat 4.5s ease-in-out infinite;
+}
+
+.mascot-dance {
+  animation: mascotDance 1.9s ease-in-out infinite;
+}
+
+.mascot-bounce,
+.mascot-celebrate {
+  animation: mascotBounce 2.6s ease-in-out infinite;
+}
+
+.mascot-pulse,
+.mascot-heartbeat {
+  animation: mascotPulse 2.2s ease-in-out infinite;
+}
+
+.mascot-blink {
+  animation: mascotFloat 4s ease-in-out infinite;
+}
+
+.mascot-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: eyeBlink 4.8s ease-in-out infinite;
+}
+
+.mascot-arm-left {
+  transform-box: fill-box;
+  transform-origin: 56px 55px;
+}
+
+.mascot-wave .mascot-arm-left,
+.mascot-celebrate .mascot-arm-left {
+  animation: armWave 1.2s ease-in-out infinite;
+}
+
+.animate-note-float {
+  animation: noteFloat 2.2s ease-in-out infinite;
+}
+
+.animate-note-float-delayed {
+  animation: noteFloat 2.2s ease-in-out .65s infinite;
+}
+
+.animate-soft-twinkle {
+  animation: softTwinkle 2.2s ease-in-out infinite;
+}
+
+.animate-soft-twinkle-delayed {
+  animation: softTwinkle 2.2s ease-in-out .7s infinite;
+}
+
+.animate-soft-pop {
+  animation: softPop 2.3s ease-in-out infinite;
 }

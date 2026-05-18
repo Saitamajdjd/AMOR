@@ -89,10 +89,12 @@ export default function Gift() {
 
   const playMusic = useCallback(() => {
     musicWantedRef.current = true
-    if (!musicIframeRef.current || !musicReadyRef.current) return
+    if (!musicIframeRef.current || !musicReadyRef.current) {
+      setMusicBlocked(true)
+      return
+    }
     youtubeCommand(musicIframeRef.current, 'playVideo')
     setMusicPlaying(true)
-    setMusicBlocked(false)
   }, [])
 
   const pauseMusic = useCallback(() => {
@@ -205,15 +207,18 @@ export default function Gift() {
   }, [playMusic])
 
   const handleOpenGift = () => {
-    setShowIntro(false)
     if (presente?.musica_video_id) {
       musicWantedRef.current = true
-      setMusicPlaying(true)
-      setTimeout(() => {
-        if (!musicReadyRef.current) setMusicBlocked(true)
-        else playMusic()
-      }, 250)
+      if (musicIframeRef.current && musicReadyRef.current) {
+        youtubeCommand(musicIframeRef.current, 'playVideo')
+        setMusicPlaying(true)
+        setMusicBlocked(false)
+      } else {
+        setMusicPlaying(false)
+        setMusicBlocked(true)
+      }
     }
+    setShowIntro(false)
   }
 
   useEffect(() => {
@@ -286,16 +291,14 @@ export default function Gift() {
     ? `${presente.nome_destinataria}, tenho um presente pra voce`
     : 'Tenho um presente pra voce'
 
-  if (showIntro) {
-    return <CrocIntro greeting={greeting} showButton={showButton} onOpen={handleOpenGift} />
-  }
-
   const hasMusic = !!presente.musica_video_id
   const musicSrc = hasMusic ? getYoutubeEmbedUrl(presente.musica_video_id) : null
 
   return (
-    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-[#030305] md:p-6">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(244,63,94,.22),transparent_30%),radial-gradient(circle_at_20%_80%,rgba(168,85,247,.18),transparent_35%)]" />
+    <div className={`relative min-h-[100dvh] overflow-hidden bg-[#030305] ${showIntro ? '' : 'flex items-center justify-center md:p-6'}`}>
+      {!showIntro && (
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(244,63,94,.22),transparent_30%),radial-gradient(circle_at_20%_80%,rgba(168,85,247,.18),transparent_35%)]" />
+      )}
       {hasMusic && musicSrc && (
         <iframe
           ref={musicIframeRef}
@@ -308,6 +311,9 @@ export default function Gift() {
         />
       )}
 
+      {showIntro ? (
+        <CrocIntro greeting={greeting} showButton={showButton} onOpen={handleOpenGift} />
+      ) : (
       <main
         className="relative h-[100dvh] w-full max-w-[430px] overflow-hidden bg-black shadow-[0_0_120px_rgba(244,63,94,.28)] md:h-[92dvh] md:max-h-[880px] md:rounded-[2.25rem] md:border md:border-white/10"
         style={{ touchAction: 'manipulation' }}
@@ -343,7 +349,7 @@ export default function Gift() {
                 onClick={toggleMusic}
                 className="min-h-10 rounded-full bg-rose-500 px-3 text-xs font-black text-white shadow-lg"
               >
-                Liberar musica
+                Tocar música
               </button>
             )}
             <button
@@ -382,6 +388,7 @@ export default function Gift() {
           </div>
         )}
       </main>
+      )}
     </div>
   )
 }

@@ -155,8 +155,8 @@ export default function Preview({ data, mobile = false }) {
 
   return (
     <Container>
-      <div className="bg-black rounded-[40px] overflow-hidden shadow-2xl border-4 border-gray-800">
-        <div className="relative h-[560px] bg-gradient-to-b from-purple-900 via-dark-bg to-dark-bg overflow-y-auto sm:h-[600px]">
+      <div className="overflow-hidden rounded-[42px] border border-white/15 bg-black p-1 shadow-[0_28px_90px_rgba(244,63,94,.22),inset_0_0_0_1px_rgba(255,255,255,.08)]">
+        <div className="relative h-[560px] overflow-y-auto rounded-[38px] bg-gradient-to-b from-purple-950 via-dark-bg to-black sm:h-[600px]">
           <div className="p-4 space-y-4">
             <div className="text-center py-4">
               <h3 className="font-display text-2xl text-white glow-text">

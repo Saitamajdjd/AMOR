@@ -21,39 +21,45 @@ export default function Success() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
-      <div className="max-w-lg mx-auto text-center">
-        <div className="mb-8">
-          <Mascote message="Pronto! Aqui está o link para enviar para sua namorada." />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050307] p-4">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(244,63,94,.28),transparent_30%),radial-gradient(circle_at_80%_80%,rgba(168,85,247,.22),transparent_34%)]" />
+      <div className="relative z-10 mx-auto max-w-lg text-center">
+        <div className="mb-6 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/30">
+          <Mascote message="Pronto! Agora e so mandar o link e esperar o sorriso." mood="success" />
         </div>
 
-        <h1 className="font-display text-3xl md:text-4xl text-white mb-4 glow-text">
+        <h1 className="font-display mb-4 text-4xl leading-none text-white glow-text md:text-5xl">
           Presente criado com sucesso!
         </h1>
 
-        <p className="text-gray-400 mb-8">
-          Agora é só enviar este link para ela e esperar o sorriso lovel.
+        <p className="mb-8 text-white/60">
+          Pronto! Seu presente ficou lindo. Aqui esta o link para enviar para quem voce ama.
         </p>
 
-        <div className="card-glass glow-card mb-6">
-          <label className="block text-gray-400 text-sm mb-2">Link do presente</label>
-          <div className="flex gap-2">
+        <div className="card-glass glow-card mb-6 shadow-[0_24px_90px_rgba(0,0,0,.45)]">
+          <label className="mb-2 block text-sm font-semibold text-rose-100/70">Link do presente</label>
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
               readOnly
               value={giftUrl}
-              className="input-field flex-1 text-sm truncate"
+              className="input-field flex-1 truncate text-sm"
             />
             <button
               onClick={copyLink}
-              className="btn-primary px-4 py-2 whitespace-nowrap"
+              className="btn-primary whitespace-nowrap px-5 py-3"
             >
-              {copied ? '✓ Copiado!' : 'Copiar'}
+              {copied ? 'Copiado!' : 'Copiar link'}
             </button>
           </div>
+          {copied && (
+            <p className="mt-3 rounded-full bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-200">
+              Link copiado para a area de transferencia.
+            </p>
+          )}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Link
             to={giftUrl}
             target="_blank"
@@ -69,9 +75,9 @@ export default function Success() {
           </Link>
         </div>
 
-        <div className="mt-10 p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl">
-          <p className="text-purple-300 text-sm">
-            💡 Dica: Compartilhe o link no WhatsApp, Instagram ou mande por mensagem de texto!
+        <div className="mt-10 rounded-2xl border border-purple-400/20 bg-purple-500/10 p-4">
+          <p className="text-sm text-purple-200">
+            Dica: compartilhe no WhatsApp, Instagram ou envie por mensagem.
           </p>
         </div>
       </div>

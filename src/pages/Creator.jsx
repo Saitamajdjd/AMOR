@@ -31,6 +31,26 @@ const MASCOTE_MESSAGES = {
   7: "Quase pronto! Adicione os extras para deixar tudo mais especial."
 }
 
+const STEP_DETAILS = {
+  1: { title: 'Dados do Casal', subtitle: 'Comece com quem envia, quem recebe e quando tudo virou historia.', icon: '01', mood: 'calm' },
+  2: { title: 'Titulo', subtitle: 'Escolha uma frase de abertura com cara de presente unico.', icon: '02', mood: 'title' },
+  3: { title: 'Musica', subtitle: 'Adicione a trilha que vai tocar quando o presente abrir.', icon: '03', mood: 'music' },
+  4: { title: 'Fotos', subtitle: 'Separe as lembrancas que merecem virar destaque.', icon: '04', mood: 'photos' },
+  5: { title: 'Mensagem', subtitle: 'Escreva o texto principal com calma e carinho.', icon: '05', mood: 'message' },
+  6: { title: 'Audio especial', subtitle: 'Opcional, mas a sua voz deixa tudo mais pessoal.', icon: '06', mood: 'audio' },
+  7: { title: 'Extras', subtitle: 'Complete com timeline, estrelas, jogo e roleta.', icon: '07', mood: 'extras' }
+}
+
+const GUIDE_MESSAGES = {
+  1: "Calma ai, romantico... primeiro me conta quem sao voces.",
+  2: "Agora escolhe um titulo que vai fazer ela sorrir.",
+  3: "Agora escolhe aquela musica que faz lembrar dela.",
+  4: "Manda aquelas fotos que fazem o coracao apertar.",
+  5: "Agora escreve aquilo que talvez voce nao diga todo dia.",
+  6: "Sua voz pode deixar esse presente ainda mais especial.",
+  7: "Quase pronto! Vamos deixar alguns detalhes inesqueciveis."
+}
+
 const SUGESTOES_MENSAGEM = [
   "Desde o dia em que te conheci, minha vida ganhou cores que eu nem sabia que existiam. Você é a melhor parte de cada meu dia.",
   "Te amo mais do que todas as estrelas do céu. Você é meu aujourd'hui, meu amanhã, meu sempre.",
@@ -407,49 +427,75 @@ export default function Creator() {
     }
   }
 
+  const currentStep = STEP_DETAILS[step] || STEP_DETAILS[1]
+  const progress = Math.round((step / STEPS.length) * 100)
+
   return (
-    <div className="min-h-screen overflow-x-hidden bg-dark-bg px-3 py-4 sm:px-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between gap-3">
+    <div className="relative min-h-screen overflow-x-hidden bg-[#050307] px-3 py-4 sm:px-4 md:p-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(244,63,94,.22),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(168,85,247,.18),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(127,29,29,.22),transparent_38%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.035)_1px,transparent_1px)] [background-size:42px_42px]" />
+      <div className="relative z-10 mx-auto max-w-7xl">
+        <div className="mb-5 flex items-center justify-between gap-3">
           <button
             onClick={() => navigate('/')}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-300 shadow-lg shadow-black/20 transition hover:border-rose-300/50 hover:text-white"
+            aria-label="Voltar"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
 
-          <div className="flex min-w-0 flex-1 justify-center gap-2">
-            {STEPS.map((s) => (
-              <div
-                key={s.id}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  s.id === step
-                    ? 'bg-rose-500 scale-125'
-                    : s.id < step
-                    ? 'bg-rose-800'
-                    : 'bg-dark-border'
-                }`}
-              />
-            ))}
+          <div className="min-w-0 flex-1">
+            <div className="mx-auto flex max-w-md items-center gap-1.5 sm:gap-2">
+              {STEPS.map((s) => (
+                <div key={s.id} className="flex flex-1 items-center gap-1.5">
+                  <div
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-black transition-all duration-300 sm:h-8 sm:w-8 ${
+                      s.id === step
+                        ? 'scale-105 border-rose-300 bg-gradient-to-br from-rose-500 to-purple-600 text-white shadow-[0_0_24px_rgba(244,63,94,.45)]'
+                        : s.id < step
+                        ? 'border-emerald-300/40 bg-emerald-400/15 text-emerald-200'
+                        : 'border-white/10 bg-white/[0.04] text-white/35'
+                    }`}
+                  >
+                    {s.id < step ? '✓' : s.id}
+                  </div>
+                  {s.id < STEPS.length && (
+                    <div className="hidden h-px flex-1 overflow-hidden rounded-full bg-white/10 sm:block">
+                      <div className={`h-full rounded-full bg-gradient-to-r from-rose-500 to-purple-500 transition-all duration-500 ${s.id < step ? 'w-full' : 'w-0'}`} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="mx-auto mt-3 h-1 max-w-md overflow-hidden rounded-full bg-white/10 sm:hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+            </div>
           </div>
 
-          <div className="w-6" />
+          <div className="hidden w-11 sm:block" />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
           <div className="lg:order-1">
-            <div className="card-glass glow-card mb-6 w-full max-w-full">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-2xl">{STEPS[step - 1].icon}</span>
-                <h2 className="font-display text-2xl text-white">{STEPS[step - 1].title}</h2>
+            <div className="card-glass glow-card mb-6 w-full max-w-full overflow-hidden shadow-[0_24px_90px_rgba(0,0,0,.45)]">
+              <div className="mb-6 flex items-start gap-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-rose-300/25 bg-gradient-to-br from-rose-500/25 to-purple-500/20 text-sm font-black text-rose-100 shadow-lg shadow-rose-950/25">
+                  {currentStep.icon}
+                </span>
+                <div className="min-w-0">
+                  <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.26em] text-rose-200/70">Etapa {step} de {STEPS.length}</p>
+                  <h2 className="font-display text-3xl leading-none text-white">{currentStep.title}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-white/55">{currentStep.subtitle}</p>
+                </div>
               </div>
 
-              <div className="mb-6">
-                <Mascote message={MASCOTE_MESSAGES[step]} />
+              <div className="mb-6 rounded-[1.5rem] border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-4">
+                <Mascote message={GUIDE_MESSAGES[step] || MASCOTE_MESSAGES[step]} mood={currentStep.mood} />
               </div>
 
+              <div key={step} className="creator-step-enter">
               {step === 1 && (
                 <div className="space-y-4">
                   <div>
@@ -572,7 +618,7 @@ export default function Creator() {
                     <label className="block text-gray-400 text-sm mb-2">
                       Fotos do casal (até 6)
                     </label>
-                    <div className="border-2 border-dashed border-dark-border rounded-xl p-6 text-center hover:border-rose-500/50 transition-colors">
+                    <div className="rounded-[1.5rem] border border-dashed border-rose-300/25 bg-white/[0.035] p-6 text-center shadow-inner shadow-black/30 transition-colors hover:border-rose-300/60 hover:bg-rose-500/5">
                       <input
                         type="file"
                         accept="image/jpeg,image/jpg,image/png,image/webp"
@@ -600,17 +646,17 @@ export default function Creator() {
                   </div>
 
                   {formData.fotos.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
                       {formData.fotos.map((foto, index) => (
                         <div key={index} className="relative">
                           <img
                             src={fotoPreviewUrls[index]}
                             alt={`Foto ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-lg"
+                            className="h-24 w-full rounded-2xl border border-white/10 object-cover shadow-lg shadow-black/20"
                           />
                           <button
                             onClick={() => removeFoto(index)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                            className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-xs text-white shadow-lg"
                           >
                             ×
                           </button>
@@ -667,7 +713,7 @@ export default function Creator() {
                     />
                   </div>
 
-                  <div className="rounded-2xl border border-dark-border bg-dark-border/30 p-4">
+                  <div className="rounded-[1.5rem] border border-rose-300/15 bg-gradient-to-br from-rose-950/20 to-purple-950/20 p-4 shadow-inner shadow-black/30">
                     <div className="flex flex-col gap-3 sm:flex-row">
                       {!isRecording ? (
                         <button
@@ -681,7 +727,7 @@ export default function Creator() {
                         <button
                           type="button"
                           onClick={stopRecording}
-                          className="min-h-12 flex-1 rounded-full bg-red-500 px-4 py-3 font-semibold text-white transition active:scale-95"
+                          className="min-h-12 flex-1 rounded-full bg-gradient-to-r from-red-500 to-rose-600 px-4 py-3 font-semibold text-white shadow-lg shadow-red-950/30 transition active:scale-95"
                         >
                           Parar gravacao {recordingLabel}
                         </button>
@@ -698,6 +744,14 @@ export default function Creator() {
                       </label>
                     </div>
 
+                    {isRecording && (
+                      <div className="mt-4 flex items-center justify-center gap-1.5">
+                        {[16, 26, 18, 32, 22].map((height, index) => (
+                          <span key={index} className="w-1.5 rounded-full bg-red-300 animate-pulse" style={{ height, animationDelay: `${index * 0.08}s` }} />
+                        ))}
+                      </div>
+                    )}
+
                     <p className="mt-3 text-xs text-gray-500">
                       MP3, WAV, WEBM, M4A, MP4 ou OGG. Ate 10MB.
                     </p>
@@ -710,7 +764,7 @@ export default function Creator() {
                   </div>
 
                   {formData.audioEspecial.previewUrl && (
-                    <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-4">
+                    <div className="rounded-[1.5rem] border border-rose-300/25 bg-gradient-to-br from-rose-500/15 to-purple-500/10 p-4 shadow-xl shadow-rose-950/20">
                       <p className="mb-3 text-sm font-semibold text-rose-200">Audio pronto para usar</p>
                       <audio controls src={formData.audioEspecial.previewUrl} className="w-full" />
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -736,7 +790,7 @@ export default function Creator() {
 
               {step === 7 && (
                 <div className="max-h-none space-y-6 overflow-visible pr-0 lg:max-h-[500px] lg:overflow-y-auto lg:pr-2">
-                  <div className="border border-dark-border rounded-xl p-4">
+                  <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 shadow-lg shadow-black/20">
                     <h3 className="font-display text-lg text-white mb-3">📅 Linha do Tempo</h3>
                     <div className="space-y-3 mb-3">
                       <input
@@ -751,7 +805,7 @@ export default function Creator() {
                       />
                     </div>
                     {formData.linhaTempo.momentos.map((momento, index) => (
-                      <div key={index} className="bg-dark-border/50 rounded-lg p-3 mb-2">
+                      <div key={index} className="mb-2 rounded-2xl border border-white/10 bg-black/25 p-3">
                         <input
                           type="date"
                           className="input-field mb-2"
@@ -790,7 +844,7 @@ export default function Creator() {
                     )}
                   </div>
 
-                  <div className="border border-dark-border rounded-xl p-4">
+                  <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 shadow-lg shadow-black/20">
                     <h3 className="font-display text-lg text-white mb-3">⭐ Mapa das Estrelas</h3>
                     <textarea
                       className="input-field mb-2"
@@ -813,7 +867,7 @@ export default function Creator() {
                     />
                   </div>
 
-                  <div className="border border-dark-border rounded-xl p-4">
+                  <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 shadow-lg shadow-black/20">
                     <h3 className="font-display text-lg text-white mb-3">🔤 Jogo da Palavra</h3>
                     <input
                       type="text"
@@ -848,7 +902,7 @@ export default function Creator() {
                     />
                   </div>
 
-                  <div className="border border-dark-border rounded-xl p-4">
+                  <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4 shadow-lg shadow-black/20">
                     <h3 className="font-display text-lg text-white mb-3">🎡 Roleta do Amor</h3>
                     <input
                       type="text"
@@ -917,13 +971,15 @@ export default function Creator() {
                 </div>
               )}
 
+              </div>
+
               {error && (
                 <div className="mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">
                   {error}
                 </div>
               )}
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex gap-3 border-t border-white/10 pt-5">
                 {step > 1 && (
                   <button
                     onClick={() => setStep(step - 1)}

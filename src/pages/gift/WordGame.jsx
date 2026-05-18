@@ -16,7 +16,9 @@ export default function WordGame({ data, onComplete, isActive }) {
     setCurrentGuess(raw.toUpperCase().replace(/[^A-Z]/g, '').slice(0, word.length))
   }, [word.length])
 
-  const submitGuess = useCallback(() => {
+  const submitGuess = useCallback((e) => {
+    e?.preventDefault?.()
+    e?.stopPropagation?.()
     if (currentGuess.length !== word.length) return
     const guess = currentGuess.toUpperCase()
     setAttempts((a) => [...a, guess])
@@ -38,9 +40,7 @@ export default function WordGame({ data, onComplete, isActive }) {
     const onKey = (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') return
       if (e.key === 'Enter') {
-        e.stopPropagation()
-        e.preventDefault()
-        submitGuess()
+        submitGuess(e)
       } else if (e.key === 'Backspace') {
         e.stopPropagation()
         setCurrentGuess((g) => g.slice(0, -1))
@@ -87,62 +87,77 @@ export default function WordGame({ data, onComplete, isActive }) {
 
   return (
     <div
-      className="pointer-events-auto touch-manipulation rounded-[2rem] border border-white/10 bg-black/35 p-4 shadow-2xl backdrop-blur"
-      data-story-interactive
-      onClick={stopBubble}
-      onTouchStart={stopBubble}
-      onTouchEnd={stopBubble}
-      onPointerDown={stopBubble}
+      className="pointer-events-auto mx-auto w-full max-w-full touch-manipulation overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/35 p-3 shadow-2xl backdrop-blur sm:rounded-[2rem] sm:p-4"
     >
-      <p className="mb-4 text-center text-lg font-bold leading-snug text-white">{data.pergunta}</p>
+      <p className="mb-3 text-center text-base font-bold leading-snug text-white sm:text-lg">{data.pergunta}</p>
 
-      <input
-        ref={inputRef}
-        type="text"
-        inputMode="text"
-        autoCapitalize="characters"
-        autoCorrect="off"
-        autoComplete="off"
-        spellCheck={false}
-        maxLength={word.length}
-        value={currentGuess}
-        onChange={(e) => { stopBubble(e); applyGuess(e.target.value) }}
-        onKeyDown={(e) => e.stopPropagation()}
-        onClick={stopBubble}
-        onTouchStart={stopBubble}
-        className="sr-only"
-        aria-label="Digite a palavra"
-      />
+      <form onSubmit={submitGuess} data-story-controls onClick={stopBubble} onTouchStart={stopBubble} onPointerDown={stopBubble}>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="text"
+          enterKeyHint="done"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={word.length}
+          value={currentGuess}
+          onChange={(e) => { stopBubble(e); applyGuess(e.target.value) }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submitGuess(e)
+            else e.stopPropagation()
+          }}
+          onClick={stopBubble}
+          onTouchStart={stopBubble}
+          className="sr-only"
+          aria-label="Digite a palavra"
+        />
 
-      <button type="button" className="mb-3 flex w-full justify-center gap-1.5" onClick={focusInput} onTouchStart={stopBubble}>
-        {Array(word.length).fill(0).map((_, i) => (
-          <span
-            key={i}
-            className={`flex h-12 w-10 items-center justify-center rounded-xl border text-xl font-black ${
-              currentGuess[i] ? 'border-white/20 bg-gradient-to-br from-rose-500 to-pink-500 text-white' : 'border-white/10 bg-white/10 text-white/30'
-            }`}
-          >
-            {currentGuess[i] || ''}
-          </span>
-        ))}
-      </button>
+        <button
+          type="button"
+          className="mx-auto mb-3 grid w-full max-w-[min(100%,22rem)] gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${word.length}, minmax(0, 1fr))` }}
+          onClick={focusInput}
+          onTouchStart={stopBubble}
+        >
+          {Array(word.length).fill(0).map((_, i) => (
+            <span
+              key={i}
+              className={`flex aspect-square min-w-0 items-center justify-center rounded-lg border text-base font-black sm:rounded-xl sm:text-xl ${
+                currentGuess[i] ? 'border-white/20 bg-gradient-to-br from-rose-500 to-pink-500 text-white' : 'border-white/10 bg-white/10 text-white/30'
+              }`}
+            >
+              {currentGuess[i] || ''}
+            </span>
+          ))}
+        </button>
+      </form>
 
       {[...Array(maxAttempts - attempts.length)].map((_, i) => (
-        <div key={i} className="mb-1 flex justify-center gap-1.5">
+        <div
+          key={i}
+          className="mx-auto mb-1 grid w-full max-w-[min(100%,22rem)] gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${word.length}, minmax(0, 1fr))` }}
+        >
           {Array(word.length).fill(0).map((_, j) => (
-            <span key={j} className="block h-12 w-10 rounded-xl border border-white/5 bg-white/5" />
+            <span key={j} className="block aspect-square min-w-0 rounded-lg border border-white/5 bg-white/5 sm:rounded-xl" />
           ))}
         </div>
       ))}
 
       {attempts.map((attempt, i) => (
-        <div key={i} className="mb-1 flex justify-center gap-1.5">
+        <div
+          key={i}
+          className="mx-auto mb-1 grid w-full max-w-[min(100%,22rem)] gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${word.length}, minmax(0, 1fr))` }}
+        >
           {attempt.split('').map((letter, j) => {
             const s = statusOf(letter, j)
             return (
               <span
                 key={j}
-                className={`flex h-12 w-10 items-center justify-center rounded-xl text-base font-black ${
+                className={`flex aspect-square min-w-0 items-center justify-center rounded-lg text-sm font-black sm:rounded-xl sm:text-base ${
                   s === 'correct' ? 'bg-emerald-500' : s === 'present' ? 'bg-yellow-500' : 'bg-zinc-600'
                 } text-white`}
               >
@@ -153,9 +168,9 @@ export default function WordGame({ data, onComplete, isActive }) {
         </div>
       ))}
 
-      <div className="mt-3 space-y-1.5">
+      <div className="mt-3 space-y-1.5" data-story-controls onClick={stopBubble} onTouchStart={stopBubble} onPointerDown={stopBubble}>
         {rows.map((row, ri) => (
-          <div key={ri} className="flex flex-wrap justify-center gap-1">
+          <div key={ri} className="grid w-full gap-1" style={{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))` }}>
             {row.map(({ key, label }) => (
               <button
                 key={`${ri}-${key}`}
@@ -164,12 +179,12 @@ export default function WordGame({ data, onComplete, isActive }) {
                 onTouchStart={stopBubble}
                 onTouchEnd={stopBubble}
                 onPointerDown={stopBubble}
-                className={`min-h-11 rounded-xl text-xs font-black shadow-lg active:bg-rose-500/70 ${
+                className={`min-h-10 min-w-0 rounded-lg px-1 text-[11px] font-black shadow-lg active:bg-rose-500/70 sm:min-h-11 sm:rounded-xl sm:text-xs ${
                   key === 'OK'
-                    ? 'min-w-[3.5rem] bg-emerald-400 px-2 text-black'
+                    ? 'bg-emerald-400 text-black'
                     : key === 'APAGAR'
-                      ? 'min-w-[3rem] bg-rose-500/80 text-white'
-                      : 'w-8 min-w-[2rem] bg-white/10 text-white'
+                      ? 'bg-rose-500/80 text-white'
+                      : 'bg-white/10 text-white'
                 }`}
               >
                 {label}
